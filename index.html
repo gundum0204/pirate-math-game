@@ -3,15 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AAR โจรสลัดน้อย ยิงธนูล่าสมบัติ — คณิตศาสตร์ ป.1</title>
+    <title>AR โจรสลัดน้อย ยิงธนูล่าสมบัติ — คณิตศาสตร์ ป.1</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Prompt & Kanit -->
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;700&family=Prompt:wght@400;700&display=swap" rel="stylesheet">
     <!-- Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- MediaPipe Hands -->
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
     <style>
         body {
             font-family: 'Prompt', 'Kanit', sans-serif;
@@ -27,20 +25,14 @@
         }
     </style>
 </head>
-<body class="fixed inset-0 w-full h-[100dvh] overflow-hidden flex items-center justify-center">
+<body class="fixed inset-0 w-full h-[100dvh] overflow-hidden flex items-center justify-center cursor-crosshair">
 
-    <!-- Video สำหรับรับภาพจากกล้อง -->
-    <video id="webcam" class="hidden" playsinline muted autoplay></video>
-
-    <!-- Canvas เดี่ยวสำหรับวาดภาพกล้อง Cover และ 3D Scene ทับ -->
+    <!-- Canvas เดี่ยวสำหรับ 3D Scene และบรรยากาศท้องทะเล -->
     <canvas id="gameCanvas" class="absolute inset-0 w-full h-full object-cover z-0"></canvas>
 
-    <!-- ม่านสีธีมโปร่งแสงทับภาพกล้อง -->
-    <div class="absolute inset-0 bg-[#10495F] opacity-40 pointer-events-none z-10"></div>
-
     <!-- HUD (DOM Overlay) -->
-    <div id="hud" class="absolute inset-0 z-20 pointer-events-none flex flex-col justify-between p-4 md:p-6 hidden">
-        <div class="flex justify-between items-center bg-black/30 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/20 text-white shadow-lg pointer-events-auto">
+    <div id="hud" class="absolute inset-0 z-25 pointer-events-none flex flex-col justify-between p-4 md:p-6 hidden">
+        <div class="flex justify-between items-center bg-black/40 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/20 text-white shadow-lg pointer-events-auto">
             <div class="flex items-center space-x-3">
                 <span class="text-2xl">🏴‍☠️</span>
                 <div>
@@ -59,29 +51,21 @@
             </div>
         </div>
 
-        <div class="self-center bg-slate-900/80 backdrop-blur-md border-2 border-amber-400/60 px-6 py-4 rounded-3xl shadow-2xl text-center max-w-lg w-full mx-4">
-            <div id="questionCategory" class="text-xs text-amber-300 font-semibold uppercase tracking-wider mb-1">โจทย์คำนวณ</div>
+        <!-- กล่องโจทย์กลางจอ -->
+        <div class="self-center bg-slate-900/90 backdrop-blur-md border-2 border-amber-400/80 px-6 py-4 rounded-3xl shadow-2xl text-center max-w-lg w-full mx-4">
+            <div class="text-xs text-amber-300 font-semibold uppercase tracking-wider mb-1">โจทย์คำนวณ</div>
             <div id="questionText" class="text-2xl md:text-4xl font-extrabold text-white game-font drop-shadow-md whitespace-pre-line">3 + 4 = ?</div>
-            <div id="subTip" class="text-xs text-slate-300 mt-1">กางมือออกเพื่อชาร์จคันธนู เล็งไปที่ลูกโป่งคำตอบที่ถูกต้อง!</div>
+            <div class="text-xs text-slate-300 mt-1">คลิกหรือแตะที่ลูกโป่งคำตอบที่ถูกต้องเพื่อยิงธนู! 🏹</div>
         </div>
 
         <div class="flex justify-between items-end pointer-events-auto">
-            <div id="statusMessage" class="bg-black/40 backdrop-blur-sm text-amber-200 px-4 py-2 rounded-xl text-xs md:text-sm border border-white/10">
-                🔍 กำลังมองหามือ...
+            <div id="statusMessage" class="bg-black/50 backdrop-blur-sm text-amber-200 px-4 py-2 rounded-xl text-xs md:text-sm border border-white/10">
+                🎯 คลิกเลือกลูกโป่งคำตอบได้เลย
             </div>
-            <div class="bg-black/40 backdrop-blur-sm text-white px-3 py-1.5 rounded-xl text-xs border border-white/10 flex items-center space-x-1">
+            <div class="bg-black/50 backdrop-blur-sm text-white px-3 py-1.5 rounded-xl text-xs border border-white/10 flex items-center space-x-1">
                 <span>หีบสมบัติเปิด:</span>
                 <span id="chestCount" class="text-amber-400 font-bold">0/8 🪙</span>
             </div>
-        </div>
-    </div>
-
-    <!-- แจ้งเตือนเมื่อมือหลุดเฟรม -->
-    <div id="warningOverlay" class="absolute inset-0 z-30 pointer-events-none flex items-center justify-center bg-black/50 backdrop-blur-sm hidden">
-        <div class="bg-slate-900/90 border-4 border-amber-400 p-6 rounded-3xl text-center text-white max-w-md mx-4 shadow-2xl animate-pulse">
-            <div class="text-4xl mb-2">🏹</div>
-            <div class="text-xl font-bold mb-2 game-font text-amber-300">ยกสองมือให้กล้องเห็น จับคันธนูกันเถอะ!</div>
-            <p class="text-sm text-slate-300">กรุณายืนให้กล้องเห็นมือทั้งสองข้างชัดเจนเพื่อถือคันธนูโจรสลัด</p>
         </div>
     </div>
 
@@ -90,20 +74,16 @@
         <div class="bg-slate-900 border-4 border-amber-400 p-6 md:p-8 rounded-3xl max-w-xl w-full text-white shadow-2xl text-center">
             <div class="text-5xl mb-2">🏴‍☠️🏹</div>
             <h1 class="text-2xl md:text-3xl font-extrabold text-amber-400 game-font mb-2">AR โจรสลัดน้อย ยิงธนูล่าสมบัติ</h1>
-            <p class="text-sm text-slate-300 mb-6">เกมฝึกคิดเลข ป.1 สนุกตื่นเต้นด้วยเทคโนโลยี AR กล้องเว็บแคม</p>
+            <p class="text-sm text-slate-300 mb-6">เกมฝึกคิดเลข ป.1 สำหรับนักเรียนกัปตันตัวจิ๋ว</p>
             
             <div class="bg-slate-800/80 p-4 rounded-2xl text-left text-sm space-y-2 mb-6 border border-slate-700">
                 <div class="flex items-start space-x-2">
-                    <span class="text-amber-400 font-bold">🏴‍☠️</span>
-                    <span><b>ยกสองมือให้กล้องเห็น:</b> จับคันธนูเรืองแสงเชื่อมระหว่างมือ</span>
+                    <span class="text-amber-400 font-bold">🧠</span>
+                    <span><b>คิดเลขในใจ:</b> อ่านโจทย์คณิตศาสตร์บนหน้าจอ</span>
                 </div>
                 <div class="flex items-start space-x-2">
                     <span class="text-amber-400 font-bold">🎯</span>
-                    <span><b>เลื่อนสองมือซ้าย-ขวา:</b> เล็งลูกโป่งที่มีเลขคำตอบที่ถูกต้อง</span>
-                </div>
-                <div class="flex items-start space-x-2">
-                    <span class="text-amber-400 font-bold">🏹</span>
-                    <span><b>กางมือออกค้าง:</b> จนวงพลังทองเต็ม แล้วผ่อนมือเข้าหากันเพื่อปล่อยยิง</span>
+                    <span><b>คลิกหรือแตะยิง:</b> เล็งลูกโป่งสมบัติที่มีเลขคำตอบที่ถูกต้องแล้วคลิกเพื่อยิงธนู</span>
                 </div>
             </div>
 
@@ -113,16 +93,7 @@
         </div>
     </div>
 
-    <!-- Modal โหลด AI -->
-    <div id="loadingModal" class="absolute inset-0 z-50 flex items-center justify-center bg-[#10495F]/95 backdrop-blur-md p-4 hidden">
-        <div class="bg-slate-900 border-4 border-amber-400 p-8 rounded-3xl max-w-md w-full text-white text-center shadow-2xl">
-            <div class="inline-block animate-spin text-5xl mb-4">⌛</div>
-            <h2 class="text-xl font-bold text-amber-400 game-font mb-2">กำลังเตรียมกล้องและ AI สักครู่นะ</h2>
-            <p class="text-sm text-slate-300">กำลังเชื่อมต่อกล้องเว็บแคมและระบบตรวจจับมือ...</p>
-        </div>
-    </div>
-
-    <!-- Modal สรุปผล -->
+    <!-- Modal จบเกม -->
     <div id="gameOverModal" class="absolute inset-0 z-50 flex items-center justify-center bg-[#10495F]/95 backdrop-blur-md p-4 hidden">
         <div class="bg-slate-900 border-4 border-amber-400 p-6 md:p-8 rounded-3xl max-w-lg w-full text-white text-center shadow-2xl">
             <div class="text-6xl mb-2">🎉🏆</div>
@@ -157,21 +128,7 @@
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
                 const now = audioCtx.currentTime;
-                if (type === 'string') {
-                    osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(150, now);
-                    osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
-                    gain.gain.setValueAtTime(0.1, now);
-                    gain.gain.linearRampToValueAtTime(0.01, now + 0.1);
-                    osc.start(now); osc.stop(now + 0.1);
-                } else if (type === 'pop') {
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(440, now);
-                    osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
-                    gain.gain.setValueAtTime(0.2, now);
-                    gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
-                    osc.start(now); osc.stop(now + 0.15);
-                } else if (type === 'hit') {
+                if (type === 'hit') {
                     osc.type = 'triangle';
                     osc.frequency.setValueAtTime(600, now);
                     osc.frequency.exponentialRampToValueAtTime(200, now + 0.2);
@@ -268,13 +225,10 @@
         let chestCount = 0;
         let wrongAttemptsInCurrentQ = 0;
         let isProcessingShot = false;
-        let shotFired = false;
-        let charge = 0;
-        let canvas, ctx, renderer, scene, camera3D;
-        let videoElement, mediaPipeHands;
-        let lastPalmX = 0, lastPalmY = 0, handSizeS = 100;
+        let renderer, scene, camera3D;
         let balloons = [];
-        let currentArrow = null;
+        let raycaster = new THREE.Raycaster();
+        let mouse = new THREE.Vector2();
 
         function generateSessionQuestions() {
             let pool1or3 = [...questionBank[0], ...questionBank[2]];
@@ -294,7 +248,7 @@
             canvas2D.width = 256; canvas2D.height = 256;
             const c2d = canvas2D.getContext('2d');
             c2d.clearRect(0, 0, 256, 256);
-            c2d.fillStyle = 'rgba(255, 255, 255, 0.25)';
+            c2d.fillStyle = 'rgba(255, 255, 255, 0.3)';
             c2d.beginPath(); c2d.arc(128, 128, 90, 0, Math.PI * 2); c2d.fill();
             c2d.font = 'bold 110px "Kanit", "Prompt", sans-serif';
             c2d.textAlign = 'center'; c2d.textBaseline = 'middle';
@@ -308,20 +262,17 @@
         }
 
         function initThreeJS() {
-            canvas = document.getElementById('gameCanvas');
-            ctx = canvas.getContext('2d');
+            const canvas = document.getElementById('gameCanvas');
             renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
-            
-            const w = innerWidth, h = innerHeight;
-            renderer.setSize(w, h);
+            renderer.setSize(innerWidth, innerHeight);
             renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
 
             scene = new THREE.Scene();
-            camera3D = new THREE.PerspectiveCamera(60, w / h, 0.1, 1000);
+            camera3D = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 1000);
             camera3D.position.z = 5;
 
-            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-            const dl = new THREE.DirectionalLight(0xffdf88, 0.6);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+            const dl = new THREE.DirectionalLight(0xffdf88, 0.7);
             dl.position.set(5, 10, 7);
             scene.add(dl);
 
@@ -331,14 +282,14 @@
                 camera3D.aspect = innerWidth / innerHeight;
                 camera3D.updateProjectionMatrix();
             });
+
+            window.addEventListener('click', onPointerClick);
         }
 
         function spawnBalloonsForCurrentQuestion() {
             balloons.forEach(b => scene.remove(b.mesh));
             balloons = [];
             isProcessingShot = false;
-            shotFired = false;
-            charge = 0;
 
             questionIndex = Math.max(0, Math.min(questionIndex, currentQuestions.length - 1));
             const currentQ = currentQuestions[questionIndex];
@@ -348,8 +299,8 @@
             document.getElementById('chestCount').innerText = `${chestCount}/8 🪙`;
 
             let answers = [currentQ.ans, currentQ.decoys[0], currentQ.decoys[1]].sort(() => Math.random() - 0.5);
-            let balloonRadius = (wrongAttemptsInCurrentQ >= 2) ? 0.75 : 0.6;
-            let positions = [-1.8, 0, 1.8];
+            let balloonRadius = (wrongAttemptsInCurrentQ >= 2) ? 0.8 : 0.65;
+            let positions = [-2.2, 0, 2.2];
 
             answers.forEach((ansVal, idx) => {
                 const geometry = new THREE.SphereGeometry(balloonRadius, 32, 32);
@@ -358,190 +309,32 @@
                     map: createNumberTexture(ansVal.toString())
                 });
                 const mesh = new THREE.Mesh(geometry, material);
-                mesh.position.set(positions[idx], 0.5, -8);
+                mesh.position.set(positions[idx], 0.5, -2);
                 scene.add(mesh);
 
                 balloons.push({
-                    id: idx, number: ansVal, isCorrect: (ansVal === currentQ.ans),
-                    baseX: positions[idx], x: positions[idx], y: 0.5, z: -8, targetZ: -2.5,
-                    radius: balloonRadius, scored: false, mesh: mesh
+                    number: ansVal, isCorrect: (ansVal === currentQ.ans),
+                    mesh: mesh
                 });
             });
         }
 
-        // ขอสิทธิ์กล้องแบบซิงโครนัสตรงๆ ทันทีที่คลิกปุ่ม
-        document.getElementById('startBtn').addEventListener('click', () => {
-            initAudio();
-            document.getElementById('startModal').classList.add('hidden');
-            document.getElementById('loadingModal').classList.remove('hidden');
+        function onPointerClick(event) {
+            if (!gameStarted || isProcessingShot) return;
 
-            navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" } })
-                .then(stream => {
-                    videoElement = document.getElementById('webcam');
-                    videoElement.srcObject = stream;
-                    videoElement.play();
+            mouse.x = (event.clientX / innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / innerHeight) * 2 + 1;
 
-                    initThreeJS();
-
-                    mediaPipeHands = new Hands({
-                        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-                    });
-                    mediaPipeHands.setOptions({
-                        selfieMode: true, maxNumHands: 2, modelComplexity: 1,
-                        minDetectionConfidence: 0.6, minTrackingConfidence: 0.6
-                    });
-                    mediaPipeHands.onResults(onHandResults);
-
-                    async function sendVideoFrame() {
-                        if (gameStarted && videoElement && videoElement.readyState >= 2) {
-                            try {
-                                await mediaPipeHands.send({ image: videoElement });
-                            } catch(e) {}
-                        }
-                        if (gameStarted) {
-                            requestAnimationFrame(sendVideoFrame);
-                        }
-                    }
-
-                    currentQuestions = generateSessionQuestions();
-                    questionIndex = 0; score = 0; combo = 1; chestCount = 0;
-
-                    document.getElementById('loadingModal').classList.add('hidden');
-                    document.getElementById('hud').classList.remove('hidden');
-                    gameStarted = true;
-
-                    spawnBalloonsForCurrentQuestion();
-                    gameLoop();
-                    requestAnimationFrame(sendVideoFrame);
-                })
-                .catch(err => {
-                    console.error(err);
-                    document.getElementById('loadingModal').classList.add('hidden');
-                    alert("ไม่สามารถเข้าถึงกล้องเว็บแคมได้ กรุณาตรวจสอบสิทธิ์การใช้งานกล้องในเบราว์เซอร์");
-                    document.getElementById('startModal').classList.remove('hidden');
-                });
-        });
-
-        function onHandResults(results) {
-            if (!gameStarted) return;
-            if (!results.image) return;
-
-            const W = innerWidth, H = innerHeight;
-            const vw = videoElement.videoWidth || 640;
-            const vh = videoElement.videoHeight || 480;
-            let sw, sh, sx, sy;
-            if (vw / vh > W / H) { sh = vh; sw = vh * W / H; sx = (vw - sw) / 2; sy = 0; }
-            else { sw = vw; sh = vw * H / W; sx = 0; sy = (vh - sh) / 2; }
-
-            ctx.save();
-            ctx.clearRect(0, 0, W, H);
-            ctx.drawImage(videoElement, sx, sy, sw, sh, 0, 0, W, H);
-            ctx.fillStyle = 'rgba(16, 73, 95, 0.4)';
-            ctx.fillRect(0, 0, W, H);
-            ctx.restore();
-
-            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                document.getElementById('warningOverlay').classList.add('hidden');
-                let h1 = results.multiHandLandmarks[0];
-                let px1 = ((h1[0].x * vw - sx) / sw) * W;
-                let py1 = ((h1[0].y * vh - sy) / sh) * H;
-
-                let wrist = h1[0], fingerMid = h1[12];
-                handSizeS = Math.hypot((fingerMid.x - wrist.x) * W, (fingerMid.y - wrist.y) * H) || 100;
-
-                lastPalmX = lastPalmX ? (lastPalmX * 0.7 + px1 * 0.3) : px1;
-                lastPalmY = lastPalmY ? (lastPalmY * 0.7 + py1 * 0.3) : py1;
-
-                if (results.multiHandLandmarks.length >= 2) {
-                    let h2 = results.multiHandLandmarks[1];
-                    let px2 = ((h2[0].x * vw - sx) / sw) * W;
-                    let py2 = ((h2[0].y * vh - sy) / sh) * H;
-                    let normDist = Math.hypot(px2 - px1, py2 - py1) / handSizeS;
-
-                    if (normDist > 1.8) {
-                        if (charge === 0) playSound('string');
-                        charge += 0.025;
-                        if (charge >= 1) {
-                            charge = 1;
-                            if (!shotFired) playSound('pop');
-                        }
-                    } else if (charge > 0 && charge < 1) {
-                        charge = Math.max(0, charge - 0.05);
-                    } else if (charge >= 1 && normDist < 1.4) {
-                        if (!shotFired) {
-                            fireArrow(lastPalmX, lastPalmY);
-                            shotFired = true;
-                            charge = 0;
-                        }
-                    }
-                } else {
-                    charge = Math.max(0, charge - 0.05);
-                    if (charge === 0) shotFired = false;
-                }
-                document.getElementById('statusMessage').innerText = `🎯 กำลังเล็ง | พลังชาร์จ: ${Math.round(charge * 100)}%`;
-            } else {
-                document.getElementById('warningOverlay').classList.remove('hidden');
-                document.getElementById('statusMessage').innerText = "⚠️ ยกสองมือให้กล้องเห็น จับคันธนูกันเถอะ!";
-            }
-        }
-
-        function fireArrow(screenX, screenY) {
-            if (isProcessingShot || currentArrow) return;
-            const raycaster = new THREE.Raycaster();
-            const mouse = new THREE.Vector2(
-                (screenX / innerWidth) * 2 - 1,
-                -(screenY / innerHeight) * 2 + 1
-            );
             raycaster.setFromCamera(mouse, camera3D);
+            let intersects = raycaster.intersectObjects(balloons.map(b => b.mesh));
 
-            let targetBalloon = null, minDst = Infinity;
-            balloons.forEach(b => {
-                let meshPos = b.mesh.position.clone();
-                meshPos.project(camera3D);
-                let dst = Math.hypot(meshPos.x - mouse.x, meshPos.y - mouse.y);
-                if (dst < minDst) { minDst = dst; targetBalloon = b; }
-            });
-
-            if (targetBalloon) {
-                const arrowGeo = new THREE.ConeGeometry(0.15, 0.8, 16);
-                arrowGeo.rotateX(Math.PI / 2);
-                const arrowMat = new THREE.MeshStandardMaterial({ color: 0xFFCE3D, emissive: 0xFFCE3D });
-                const arrowMesh = new THREE.Mesh(arrowGeo, arrowMat);
-                arrowMesh.position.set(0, -1.5, 0);
-                scene.add(arrowMesh);
-
-                currentArrow = { mesh: arrowMesh, target: targetBalloon, speed: 0.3 };
-            }
-        }
-
-        function gameLoop() {
-            requestAnimationFrame(gameLoop);
-            if (!gameStarted) return;
-
-            balloons.forEach(b => {
-                if (b.z < b.targetZ) {
-                    b.z += 0.012;
-                    b.mesh.position.z = b.z;
-                    b.mesh.position.x = b.baseX + Math.sin(Date.now() * 0.002 + b.id) * 0.15;
-                }
-            });
-
-            if (currentArrow) {
-                let targetPos = currentArrow.target.mesh.position;
-                let dir = new THREE.Vector3().subVectors(targetPos, currentArrow.mesh.position);
-                let dist = dir.length();
-
-                if (dist < 0.4) {
-                    handleBalloonHit(currentArrow.target);
-                    scene.remove(currentArrow.mesh);
-                    currentArrow = null;
-                } else {
-                    dir.normalize();
-                    currentArrow.mesh.position.addScaledVector(dir, currentArrow.speed);
-                    currentArrow.mesh.lookAt(targetPos);
+            if (intersects.length > 0) {
+                let hitMesh = intersects[0].object;
+                let clickedBalloon = balloons.find(b => b.mesh === hitMesh);
+                if (clickedBalloon) {
+                    handleBalloonHit(clickedBalloon);
                 }
             }
-            renderer.render(scene, camera3D);
         }
 
         function handleBalloonHit(balloon) {
@@ -568,35 +361,53 @@
                     wrongAttemptsInCurrentQ = 0;
                     if (questionIndex >= 8) endGame();
                     else spawnBalloonsForCurrentQuestion();
-                }, 1000);
+                }, 800);
             } else {
                 playSound('miss');
                 combo = 1;
                 document.getElementById('comboBadge').classList.add('hidden');
                 wrongAttemptsInCurrentQ++;
                 scene.remove(balloon.mesh);
-                balloon.scored = true;
 
-                if (wrongAttemptsInCurrentQ >= 2) {
-                    balloons.forEach(b => { if (!b.scored) b.mesh.scale.set(1.25, 1.25, 1.25); });
-                }
-
-                document.getElementById('statusMessage').innerText = "⚠️ อุ๊ย~ ลองเล็งใหม่นะกัปตัน!";
-                setTimeout(() => { isProcessingShot = false; }, 1000);
+                document.getElementById('statusMessage').innerText = "⚠️ อุ๊ย~ ลองคิดเลขแล้วเลือกใหม่นะกัปตัน!";
+                setTimeout(() => { isProcessingShot = false; }, 800);
             }
+        }
+
+        function gameLoop() {
+            requestAnimationFrame(gameLoop);
+            if (!gameStarted) return;
+
+            // เอฟเฟกต์ลูกโป่งลอยขึ้นลงเบาๆ
+            balloons.forEach((b, i) => {
+                b.mesh.position.y = 0.5 + Math.sin(Date.now() * 0.003 + i) * 0.2;
+            });
+
+            renderer.render(scene, camera3D);
         }
 
         function endGame() {
             gameStarted = false;
-            if (videoElement && videoElement.srcObject) {
-                videoElement.srcObject.getTracks().forEach(t => t.stop());
-            }
             let stars = score >= 700 ? "⭐⭐⭐" : (score >= 400 ? "⭐⭐" : "⭐");
             document.getElementById('starRatingText').innerText = stars;
             document.getElementById('finalScore').innerText = `${score} คะแนน`;
             document.getElementById('hud').classList.add('hidden');
             document.getElementById('gameOverModal').classList.remove('hidden');
         }
+
+        document.getElementById('startBtn').addEventListener('click', () => {
+            initAudio();
+            document.getElementById('startModal').classList.add('hidden');
+            document.getElementById('hud').classList.remove('hidden');
+
+            initThreeJS();
+            currentQuestions = generateSessionQuestions();
+            questionIndex = 0; score = 0; combo = 1; chestCount = 0;
+            gameStarted = true;
+
+            spawnBalloonsForCurrentQuestion();
+            gameLoop();
+        });
     </script>
 </body>
 </html>
