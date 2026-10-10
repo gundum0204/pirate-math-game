@@ -339,8 +339,8 @@
         let lives = 3;
         let currentQuestionIndex = 0;
         const totalQuestions = 10;
-        let currentSpeed = 0.5;
-        let baseSpeed = 0.5;
+        let currentSpeed = 0.2;
+        let baseSpeed = 0.2;
 
         // Player (Purple bouncing character)
         const player = {
@@ -564,7 +564,7 @@
                         if (chosenPlatform.isCorrect) {
                             score += 100;
                             sfx.playCoin();
-                            currentSpeed += 0.15; // เพิ่มความเร็วทีละน้อยเมื่อตอบถูก
+                            currentSpeed += 0.05; // เพิ่มความเร็วทีละน้อยเมื่อตอบถูก
                             feedbackMessage = 'ถูกต้อง! +100 🎉';
                             feedbackColor = '#00e676';
                             feedbackTimer = 1.0;
