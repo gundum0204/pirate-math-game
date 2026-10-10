@@ -125,7 +125,7 @@
         <div class="bg-slate-900 border-4 border-amber-400 p-8 rounded-3xl max-w-md w-full text-white text-center shadow-2xl">
             <div class="inline-block animate-spin text-5xl mb-4">⌛</div>
             <h2 class="text-xl font-bold text-amber-400 game-font mb-2">กำลังเตรียมกล้องและ AI สักครู่นะ</h2>
-            <p class="text-sm text-slate-300">กรุณากดอนุญาตให้เบราว์เซอร์เข้าถึงกล้องเว็บแคม...</p>
+            <p class="text-sm text-slate-300">กำลังเชื่อมต่อกล้องเว็บแคมและระบบตรวจจับมือ...</p>
         </div>
     </div>
 
@@ -153,7 +153,6 @@
 
     <!-- โค้ดหลักระบบเกม -->
     <script>
-        // --- Web Audio API Synth ---
         let audioCtx = null;
         function initAudio() {
             try {
@@ -211,7 +210,6 @@
             } catch (e) {}
         }
 
-        // --- คลังโจทย์ 48 ข้อ (6 หมวด) ---
         const questionBank = [
             [
                 { q: "3 + 4 = ?", ans: 7, decoys: [6, 8] },
@@ -418,7 +416,6 @@
             if (vw / vh > W / H) { sh = vh; sw = vh * W / H; sx = (vw - sw) / 2; sy = 0; }
             else { sw = vw; sh = vw * H / W; sx = 0; sy = (vh - sh) / 2; }
 
-            // วาดภาพกล้องลง Canvas เองตามกฎ (1) ภาพกล้องทึบ (2) ม่านสีโปร่งแสง (3) 3D Scene
             ctx.save();
             ctx.clearRect(0, 0, W, H);
             ctx.drawImage(results.image, sx, sy, sw, sh, 0, 0, W, H);
@@ -588,9 +585,6 @@
             document.getElementById('loadingModal').classList.remove('hidden');
 
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 960, height: 540 } });
-                stream.getTracks().forEach(t => t.stop());
-
                 initThreeJS();
                 initMediaPipe();
 
