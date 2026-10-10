@@ -3,419 +3,857 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ONAR โจรสลัดน้อย ยิงธนูล่าสมบัติ — คณิตศาสตร์ ป.1</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Prompt & Kanit -->
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;700&family=Prompt:wght@400;700&display=swap" rel="stylesheet">
-    <!-- Three.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <title>กระโดดลบเลข - เกมฝึกทักษะคณิตศาสตร์ ป.2</title>
+    <!-- Google Fonts: Sarabun / Kanit สำหรับฟอนต์ไทยตัวอ้วนอ่านง่าย -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700;800&family=Sarabun:wght@700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Prompt', 'Kanit', sans-serif;
+        * {
+            box-sizing: border-box;
             user-select: none;
             -webkit-user-select: none;
-            background-color: #10495F;
-            overflow: hidden;
+            -webkit-touch-callout: none;
+        }
+        body, html {
             margin: 0;
             padding: 0;
-        }
-        .game-font {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #70c5ce;
             font-family: 'Kanit', sans-serif;
+            touch-action: none;
+        }
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(to bottom, #a1eafb, #e0f7fc);
+        }
+        canvas {
+            display: block;
+            background: transparent;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        /* UI Overlays & Cards */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            transition: opacity 0.3s ease;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .card {
+            background: #ffffff;
+            width: 90%;
+            max-width: 480px;
+            border-radius: 30px;
+            padding: 30px 25px;
+            text-align: center;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.25);
+            border: 6px solid #ffcc00;
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        h1 {
+            color: #ff5722;
+            font-size: 2.2rem;
+            margin: 0 0 10px 0;
+            font-weight: 800;
+            text-shadow: 2px 2px 0px #ffe0b2;
+        }
+        .target-banner {
+            background: #fff8e1;
+            border: 3px dashed #ffb300;
+            border-radius: 15px;
+            padding: 12px;
+            margin-bottom: 20px;
+            color: #e65100;
+            font-size: 1.05rem;
+            font-weight: 700;
+        }
+        .steps-list {
+            text-align: left;
+            margin: 0 0 20px 0;
+            padding: 0;
+            list-style: none;
+        }
+        .steps-list li {
+            margin-bottom: 10px;
+            font-size: 1rem;
+            color: #455a64;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+        }
+        .steps-list li span {
+            font-size: 1.4rem;
+            margin-right: 12px;
+            min-width: 30px;
+            text-align: center;
+        }
+        .tip-box {
+            background: #e8f5e9;
+            border-left: 6px solid #4caf50;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            color: #2e7d32;
+            text-align: left;
+            margin-bottom: 25px;
+            font-weight: 600;
+        }
+        .btn-primary {
+            background: linear-gradient(to bottom, #ffca28, #ff8f00);
+            color: #ffffff;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            font-weight: 800;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #e65100, 0 10px 20px rgba(0,0,0,0.2);
+            transition: all 0.1s ease;
+            font-family: 'Kanit', sans-serif;
+            width: 100%;
+        }
+        .btn-primary:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #e65100, 0 5px 10px rgba(0,0,0,0.2);
+        }
+
+        /* Help button top-right */
+        #help-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: #ffffff;
+            border: 4px solid #ffcc00;
+            border-radius: 50%;
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #ff8f00;
+            cursor: pointer;
+            z-index: 5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            transition: transform 0.2s;
+        }
+        #help-btn:hover {
+            transform: scale(1.1);
+        }
+
+        /* Star rating in game over */
+        .stars-container {
+            font-size: 3rem;
+            margin: 15px 0;
+            letter-spacing: 10px;
+        }
+        .result-stats {
+            font-size: 1.2rem;
+            color: #37474f;
+            margin-bottom: 25px;
+            font-weight: 600;
         }
     </style>
 </head>
-<body class="fixed inset-0 w-full h-[100dvh] overflow-hidden flex items-center justify-center cursor-crosshair">
+<body>
 
-    <!-- Canvas เดี่ยวสำหรับ 3D Scene และบรรยากาศท้องทะเล -->
-    <canvas id="gameCanvas" class="absolute inset-0 w-full h-full object-cover z-0"></canvas>
+    <div id="game-container">
+        <!-- Help Button -->
+        <button id="help-btn" class="hidden" title="วิธีเล่น">❔</button>
 
-    <!-- HUD (DOM Overlay) -->
-    <div id="hud" class="absolute inset-0 z-25 pointer-events-none flex flex-col justify-between p-4 md:p-6 hidden">
-        <div class="flex justify-between items-center bg-black/40 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/20 text-white shadow-lg pointer-events-auto">
-            <div class="flex items-center space-x-3">
-                <span class="text-2xl">🏴‍☠️</span>
-                <div>
-                    <div class="text-xs text-amber-300 font-semibold">คะแนนรวม</div>
-                    <div id="scoreDisplay" class="text-xl md:text-2xl font-bold game-font">0</div>
+        <!-- Canvas Game Area -->
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- Start / Help Modal -->
+        <div id="start-screen" class="overlay">
+            <div class="card">
+                <h1>🐰 กระโดดลบเลข 🔢</h1>
+                <div class="target-banner">
+                    🎯 เป้าหมาย: พาลูกบอลไปอยู่เหนือแท่นที่มีคำตอบลบที่ถูกต้อง!
                 </div>
-            </div>
-            <div class="text-center">
-                <div class="text-xs text-amber-300 font-semibold">ภารกิจขุมทรัพย์</div>
-                <div id="progressDisplay" class="text-lg md:text-xl font-bold game-font text-amber-400">ข้อ 1 / 8</div>
-            </div>
-            <div class="flex items-center space-x-2">
-                <div id="comboBadge" class="bg-amber-500 text-slate-900 font-bold px-3 py-1 rounded-full text-sm shadow-md animate-bounce hidden">
-                    COMBO x<span id="comboDisplay">1</span>
+                <ul class="steps-list">
+                    <li><span>👀</span> อ่านโจทย์ลบด้านบนจอ</li>
+                    <li><span>🧮</span> คิดคำตอบในใจ (เลขภายใน 20 ไม่ติดลบ)</li>
+                    <li><span>👈👉</span> ลากนิ้ว/เมาส์ หรือกดปุ่มลูกศรบังคับลูกบอล</li>
+                    <li><span>⬇️</span> ลงบนแท่นคำตอบถูกก่อนถึงเส้นลงจอด</li>
+                </ul>
+                <div class="tip-box">
+                    💡 ตอบผิดไม่เป็นไร แท่นที่ถูกจะเรืองแสงให้ดู ลองใหม่ได้ทันที!
                 </div>
+                <button id="start-btn" class="btn-primary">เริ่มเล่น! 🚀</button>
             </div>
         </div>
 
-        <!-- กล่องโจทย์กลางจอ -->
-        <div class="self-center bg-slate-900/90 backdrop-blur-md border-2 border-amber-400/80 px-6 py-4 rounded-3xl shadow-2xl text-center max-w-lg w-full mx-4 pointer-events-auto">
-            <div class="text-xs text-amber-300 font-semibold uppercase tracking-wider mb-1">โจทย์คำนวณ</div>
-            <div id="questionText" class="text-2xl md:text-4xl font-extrabold text-white game-font drop-shadow-md whitespace-pre-line">3 + 4 = ?</div>
-            <div class="text-xs text-slate-300 mt-1">คลิกหรือแตะที่ลูกโป่งคำตอบที่ถูกต้องเพื่อยิงธนู! 🏹</div>
-        </div>
-
-        <div class="flex justify-between items-end pointer-events-auto">
-            <div id="statusMessage" class="bg-black/50 backdrop-blur-sm text-amber-200 px-4 py-2 rounded-xl text-xs md:text-sm border border-white/10">
-                🎯 คลิกเลือกลูกโป่งคำตอบได้เลย
-            </div>
-            <div class="bg-black/50 backdrop-blur-sm text-white px-3 py-1.5 rounded-xl text-xs border border-white/10 flex items-center space-x-1">
-                <span>หีบสมบัติเปิด:</span>
-                <span id="chestCount" class="text-amber-400 font-bold">0/8 🪙</span>
+        <!-- Game Over / Victory Modal -->
+        <div id="gameover-screen" class="overlay hidden">
+            <div class="card">
+                <h1 id="gameover-title">🎉 ยอดเยี่ยมมาก!</h1>
+                <div class="stars-container" id="gameover-stars">⭐⭐⭐</div>
+                <div class="result-stats" id="gameover-stats">
+                    คะแนนรวม: 1,000 คะแนน<br>ผ่านทั้งหมด 10 ข้อ
+                </div>
+                <button id="restart-btn" class="btn-primary">เล่นใหม่อีกครั้ง 🔄</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal เริ่มเกม -->
-    <div id="startModal" class="absolute inset-0 z-40 flex items-center justify-center bg-[#10495F]/95 backdrop-blur-md p-4">
-        <div class="bg-slate-900 border-4 border-amber-400 p-6 md:p-8 rounded-3xl max-w-xl w-full text-white shadow-2xl text-center">
-            <div class="text-5xl mb-2">🏴‍☠️🏹</div>
-            <h1 class="text-2xl md:text-3xl font-extrabold text-amber-400 game-font mb-2">AR โจรสลัดน้อย ยิงธนูล่าสมบัติ</h1>
-            <p class="text-sm text-slate-300 mb-6">เกมฝึกคิดเลข ป.1 สำหรับนักเรียนกัปตันตัวจิ๋ว</p>
-            
-            <div class="bg-slate-800/80 p-4 rounded-2xl text-left text-sm space-y-2 mb-6 border border-slate-700">
-                <div class="flex items-start space-x-2">
-                    <span class="text-amber-400 font-bold">🧠</span>
-                    <span><b>คิดเลขในใจ:</b> อ่านโจทย์คณิตศาสตร์บนหน้าจอ</span>
-                </div>
-                <div class="flex items-start space-x-2">
-                    <span class="text-amber-400 font-bold">🎯</span>
-                    <span><b>คลิกหรือแตะยิง:</b> เล็งลูกโป่งสมบัติที่มีเลขคำตอบที่ถูกต้องแล้วคลิกเพื่อยิงธนู</span>
-                </div>
-            </div>
-
-            <button id="startBtn" class="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold rounded-2xl text-lg shadow-lg transform transition active:scale-95 game-font cursor-pointer">
-                🚀 เริ่มต้นการผจญภัย
-            </button>
-        </div>
-    </div>
-
-    <!-- Modal จบเกม -->
-    <div id="gameOverModal" class="absolute inset-0 z-50 flex items-center justify-center bg-[#10495F]/95 backdrop-blur-md p-4 hidden">
-        <div class="bg-slate-900 border-4 border-amber-400 p-6 md:p-8 rounded-3xl max-w-lg w-full text-white text-center shadow-2xl">
-            <div class="text-6xl mb-2">🎉🏆</div>
-            <h2 class="text-2xl md:text-3xl font-extrabold text-amber-400 game-font mb-1">เปิดหีบสมบัติครบแล้ว เก่งมากกัปตัน! 🎉</h2>
-            <p id="starRatingText" class="text-3xl my-3">⭐⭐⭐</p>
-            <div class="bg-slate-800 p-4 rounded-2xl my-4 text-sm space-y-2 border border-slate-700">
-                <div class="flex justify-between">
-                    <span class="text-slate-300">คะแนนรวมทั้งหมด:</span>
-                    <span id="finalScore" class="font-bold text-amber-400 game-font">0 คะแนน</span>
-                </div>
-            </div>
-            <button onclick="location.reload()" class="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-extrabold rounded-2xl text-lg shadow-lg game-font cursor-pointer">
-                🔄 เล่นใหม่อีกครั้ง
-            </button>
-        </div>
-    </div>
-
+    <!-- Web Audio API Sound Synthesizer (No external assets required) -->
     <script>
-        let audioCtx = null;
-        function initAudio() {
-            try {
-                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                if (audioCtx.state === 'suspended') audioCtx.resume();
-            } catch (e) {}
-        }
-        function playSound(type) {
-            try {
-                initAudio();
-                if (!audioCtx) return;
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                const now = audioCtx.currentTime;
-                if (type === 'hit') {
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(600, now);
-                    osc.frequency.exponentialRampToValueAtTime(200, now + 0.2);
-                    gain.gain.setValueAtTime(0.25, now);
-                    gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
-                    osc.start(now); osc.stop(now + 0.2);
-                } else if (type === 'miss') {
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(250, now);
-                    osc.frequency.exponentialRampToValueAtTime(100, now + 0.25);
-                    gain.gain.setValueAtTime(0.15, now);
-                    gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
-                    osc.start(now); osc.stop(now + 0.25);
-                } else if (type === 'combo') {
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(523.25, now);
-                    osc.frequency.setValueAtTime(659.25, now + 0.1);
-                    osc.frequency.setValueAtTime(783.99, now + 0.2);
-                    gain.gain.setValueAtTime(0.15, now);
-                    gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
-                    osc.start(now); osc.stop(now + 0.3);
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+            }
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
                 }
-            } catch (e) {}
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+            playJump() {
+                this.init();
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(600, this.ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.15);
+            }
+            playCoin() {
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+                osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+                osc.frequency.setValueAtTime(1046.50, now + 0.24); // C6
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            }
+            playError() {
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.linearRampToValueAtTime(100, now + 0.25);
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.25);
+                
+                // Vibration support for mobile
+                if (navigator.vibrate) {
+                    navigator.vibrate(200);
+                }
+            }
         }
+        const sfx = new SoundFX();
+    </script>
 
-        const questionBank = [
-            [
-                { q: "3 + 4 = ?", ans: 7, decoys: [6, 8] },
-                { q: "5 + 4 = ?", ans: 9, decoys: [8, 10] },
-                { q: "6 + 2 = ?", ans: 8, decoys: [7, 9] },
-                { q: "2 + 7 = ?", ans: 9, decoys: [5, 10] },
-                { q: "1 + 9 = ?", ans: 10, decoys: [8, 9] },
-                { q: "4 + 4 = ?", ans: 8, decoys: [6, 9] },
-                { q: "8 + 1 = ?", ans: 9, decoys: [7, 10] },
-                { q: "5 + 5 = ?", ans: 10, decoys: [9, 11] }
-            ],
-            [
-                { q: "8 + 5 = ?", ans: 13, decoys: [12, 14] },
-                { q: "9 + 2 = ?", ans: 11, decoys: [10, 12] },
-                { q: "7 + 7 = ?", ans: 14, decoys: [13, 15] },
-                { q: "6 + 9 = ?", ans: 15, decoys: [14, 16] },
-                { q: "8 + 8 = ?", ans: 16, decoys: [15, 18] },
-                { q: "9 + 8 = ?", ans: 17, decoys: [16, 18] },
-                { q: "12 + 6 = ?", ans: 18, decoys: [17, 19] },
-                { q: "14 + 5 = ?", ans: 19, decoys: [18, 20] }
-            ],
-            [
-                { q: "9 - 4 = ?", ans: 5, decoys: [4, 6] },
-                { q: "8 - 5 = ?", ans: 3, decoys: [2, 4] },
-                { q: "7 - 6 = ?", ans: 1, decoys: [2, 3] },
-                { q: "10 - 6 = ?", ans: 4, decoys: [3, 5] },
-                { q: "6 - 3 = ?", ans: 3, decoys: [2, 4] },
-                { q: "10 - 2 = ?", ans: 8, decoys: [7, 9] },
-                { q: "9 - 7 = ?", ans: 2, decoys: [1, 3] },
-                { q: "8 - 2 = ?", ans: 6, decoys: [5, 7] }
-            ],
-            [
-                { q: "12 - 5 = ?", ans: 7, decoys: [6, 8] },
-                { q: "15 - 9 = ?", ans: 6, decoys: [5, 7] },
-                { q: "14 - 6 = ?", ans: 8, decoys: [7, 9] },
-                { q: "13 - 4 = ?", ans: 9, decoys: [8, 10] },
-                { q: "16 - 7 = ?", ans: 9, decoys: [8, 10] },
-                { q: "11 - 3 = ?", ans: 8, decoys: [7, 9] },
-                { q: "20 - 10 = ?", ans: 10, decoys: [9, 11] },
-                { q: "18 - 5 = ?", ans: 13, decoys: [12, 14] }
-            ],
-            [
-                { q: "เก็บหอยสังข์ได้ 7 ตัว\nเก็บเพิ่มอีก 5 ตัว รวมกี่ตัว?", ans: 12, decoys: [11, 13] },
-                { q: "ลูกเรือ 15 คน\nขึ้นฝั่งไป 6 คน เหลือกี่คน?", ans: 9, decoys: [8, 10] },
-                { q: "มีเหรียญทอง 9 เหรียญ\nได้เพิ่มอีก 8 เหรียญ รวมกี่เหรียญ?", ans: 17, decoys: [16, 18] },
-                { q: "จับปลาได้ 20 ตัว\nแบ่งให้เพื่อน 10 ตัว เหลือกี่ตัว?", ans: 10, decoys: [9, 11] },
-                { q: "มีลูกโป่ง 6 ใบ\nแตกไป 2 ใบ เหลือกี่ใบ?", ans: 4, decoys: [3, 5] },
-                { q: "เช้ายิงโดน 8 ลูก\nบ่ายยิงโดนอีก 4 ลูก รวมกี่ลูก?", ans: 12, decoys: [11, 13] },
-                { q: "มีแผนที่ 13 แผ่น\nหายไป 5 แผ่น เหลือกี่แผ่น?", ans: 8, decoys: [7, 9] },
-                { q: "เจอดาวทะเล 5 ตัว\nเจอเพิ่มอีก 9 ตัว รวมกี่ตัว?", ans: 14, decoys: [13, 15] }
-            ],
-            [
-                { q: "6 + ? = 10", ans: 4, decoys: [3, 5] },
-                { q: "? + 5 = 12", ans: 7, decoys: [6, 8] },
-                { q: "9 + ? = 15", ans: 6, decoys: [5, 7] },
-                { q: "8 + ? = 13", ans: 5, decoys: [4, 6] },
-                { q: "? + 7 = 16", ans: 9, decoys: [8, 10] },
-                { q: "14 - ? = 6", ans: 8, decoys: [7, 9] },
-                { q: "? - 3 = 9", ans: 12, decoys: [11, 13] },
-                { q: "11 - ? = 4", ans: 7, decoys: [6, 8] }
-            ]
+    <!-- Main Game Script -->
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // UI elements
+        const startScreen = document.getElementById('start-screen');
+        const gameoverScreen = document.getElementById('gameover-screen');
+        const startBtn = document.getElementById('start-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const helpBtn = document.getElementById('help-btn');
+        const gameoverTitle = document.getElementById('gameover-title');
+        const gameoverStars = document.getElementById('gameover-stars');
+        const gameoverStats = document.getElementById('gameover-stats');
+
+        // Game dimensions & responsiveness
+        let screenWidth = window.innerWidth;
+        let screenHeight = window.innerHeight;
+        let gameWidth = 480;
+        let gameHeight = 800;
+
+        function resizeCanvas() {
+            screenWidth = window.innerWidth;
+            screenHeight = window.innerHeight;
+            
+            // Maintain aspect ratio or fit screen nicely
+            const scaleX = screenWidth / 480;
+            const scaleY = screenHeight / 800;
+            let scale = Math.min(scaleX, scaleY);
+            
+            // On mobile allow full width or fitted height
+            if (screenWidth < 600) {
+                gameWidth = screenWidth;
+                gameHeight = screenHeight;
+            } else {
+                gameWidth = 480;
+                gameHeight = 800;
+            }
+
+            canvas.width = gameWidth;
+            canvas.height = gameHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Game State Variables
+        let gameState = 'START'; // START, PLAYING, GAMEOVER
+        let score = 0;
+        let lives = 3;
+        let currentQuestionIndex = 0;
+        const totalQuestions = 10;
+        let currentSpeed = 2.2;
+        let baseSpeed = 2.2;
+
+        // Player (Yellow bouncing character)
+        const player = {
+            x: gameWidth / 2,
+            y: 0,
+            radius: 30,
+            targetX: gameWidth / 2,
+            bounceTimer: 0,
+            squishX: 1,
+            squishY: 1
+        };
+
+        // Question & Platforms
+        let currentProblem = null;
+        let platforms = []; // Array containing left and right platform objects
+        let pairActive = false;
+        let feedbackTimer = 0; // For flashing correct platform when wrong
+        let feedbackMessage = '';
+        let feedbackColor = '#fff';
+
+        // Background decorative elements (clouds, sun)
+        const clouds = [
+            { x: 50, y: 100, speed: 0.3, size: 50 },
+            { x: 320, y: 220, speed: 0.2, size: 70 },
+            { x: 180, y: 400, speed: 0.25, size: 60 }
         ];
 
-        let gameStarted = false;
-        let currentQuestions = [];
-        let questionIndex = 0;
-        let score = 0;
-        let combo = 1;
-        let chestCount = 0;
-        let wrongAttemptsInCurrentQ = 0;
-        let isProcessingShot = false;
-        let renderer, scene, camera3D;
-        let balloons = [];
-        let raycaster = new THREE.Raycaster();
-        let mouse = new THREE.Vector2();
+        // Input handling (Touch & Mouse & Keyboard)
+        let isPointerDown = false;
 
-        function generateSessionQuestions() {
-            let pool1or3 = [...questionBank[0], ...questionBank[2]];
-            let poolOthers = [...questionBank[1], ...questionBank[3], ...questionBank[4], ...questionBank[5]];
-            pool1or3.sort(() => Math.random() - 0.5);
-            poolOthers.sort(() => Math.random() - 0.5);
-            let selected = [
-                pool1or3[0], pool1or3[1], pool1or3[2],
-                poolOthers[0], poolOthers[1], poolOthers[2], poolOthers[3], poolOthers[4]
-            ];
-            selected.sort(() => Math.random() - 0.5);
-            return selected;
-        }
-
-        // ปรับปรุงการวาด Texture ตัวเลขบนลูกโป่งให้ชัดเจนและใหญ่ขึ้นเต็มวงกลม
-        function createNumberTexture(numStr) {
-            const canvas2D = document.createElement('canvas');
-            canvas2D.width = 512; canvas2D.height = 512;
-            const c2d = canvas2D.getContext('2d');
-            c2d.clearRect(0, 0, 512, 512);
-            
-            // พื้นหลังวงกลมสีขาวโปร่งแสง
-            c2d.fillStyle = 'rgba(255, 255, 255, 0.95)';
-            c2d.beginPath(); c2d.arc(256, 256, 200, 0, Math.PI * 2); c2d.fill();
-            
-            // ขอบวงกลมสีทองเข้ม
-            c2d.lineWidth = 16;
-            c2d.strokeStyle = '#D97706';
-            c2d.stroke();
-
-            // ตัวเลขคมชัด สีดำเข้ม อ่านง่าย
-            c2d.font = 'bold 220px "Kanit", "Prompt", sans-serif';
-            c2d.textAlign = 'center'; c2d.textBaseline = 'middle';
-            c2d.fillStyle = '#1E293B';
-            c2d.fillText(numStr, 256, 260);
-
-            const texture = new THREE.CanvasTexture(canvas2D);
-            texture.needsUpdate = true;
-            return texture;
-        }
-
-        function initThreeJS() {
-            const canvas = document.getElementById('gameCanvas');
-            renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
-            renderer.setSize(innerWidth, innerHeight);
-            renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
-
-            scene = new THREE.Scene();
-            camera3D = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 1000);
-            camera3D.position.z = 5;
-
-            scene.add(new THREE.AmbientLight(0xffffff, 0.9));
-            const dl = new THREE.DirectionalLight(0xffdf88, 0.7);
-            dl.position.set(5, 10, 7);
-            scene.add(dl);
-
-            window.addEventListener('resize', () => {
-                if (!renderer || !camera3D) return;
-                renderer.setSize(innerWidth, innerHeight);
-                camera3D.aspect = innerWidth / innerHeight;
-                camera3D.updateProjectionMatrix();
-            });
-
-            window.addEventListener('click', onPointerClick);
-        }
-
-        function spawnBalloonsForCurrentQuestion() {
-            balloons.forEach(b => scene.remove(b.mesh));
-            balloons = [];
-            isProcessingShot = false;
-
-            questionIndex = Math.max(0, Math.min(questionIndex, currentQuestions.length - 1));
-            const currentQ = currentQuestions[questionIndex];
-
-            document.getElementById('questionText').innerText = currentQ.q;
-            document.getElementById('progressDisplay').innerText = `ข้อ ${questionIndex + 1} / 8`;
-            document.getElementById('chestCount').innerText = `${chestCount}/8 🪙`;
-
-            let answers = [currentQ.ans, currentQ.decoys[0], currentQ.decoys[1]].sort(() => Math.random() - 0.5);
-            let balloonRadius = (wrongAttemptsInCurrentQ >= 2) ? 0.85 : 0.7;
-            let positions = [-2.2, 0, 2.2];
-
-            answers.forEach((ansVal, idx) => {
-                const geometry = new THREE.SphereGeometry(balloonRadius, 32, 32);
-                const material = new THREE.MeshStandardMaterial({
-                    color: 0xFFB3C7, roughness: 0.2, metalness: 0.1,
-                    map: createNumberTexture(ansVal.toString())
-                });
-                const mesh = new THREE.Mesh(geometry, material);
-                mesh.position.set(positions[idx], 0.5, -2);
-                scene.add(mesh);
-
-                balloons.push({
-                    number: ansVal, isCorrect: (ansVal === currentQ.ans),
-                    mesh: mesh
-                });
-            });
-        }
-
-        function onPointerClick(event) {
-            if (!gameStarted || isProcessingShot) return;
-
-            mouse.x = (event.clientX / innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / innerHeight) * 2 + 1;
-
-            raycaster.setFromCamera(mouse, camera3D);
-            let intersects = raycaster.intersectObjects(balloons.map(b => b.mesh));
-
-            if (intersects.length > 0) {
-                let hitMesh = intersects[0].object;
-                let clickedBalloon = balloons.find(b => b.mesh === hitMesh);
-                if (clickedBalloon) {
-                    handleBalloonHit(clickedBalloon);
-                }
-            }
-        }
-
-        function handleBalloonHit(balloon) {
-            if (isProcessingShot) return;
-            isProcessingShot = true;
-
-            if (balloon.isCorrect) {
-                playSound('hit');
-                score += 100 * combo;
-                chestCount++;
-                document.getElementById('scoreDisplay').innerText = score;
-                document.getElementById('chestCount').innerText = `${chestCount}/8 🪙`;
-
-                if (combo < 4) combo++;
-                if (combo > 1) {
-                    playSound('combo');
-                    document.getElementById('comboDisplay').innerText = combo;
-                    document.getElementById('comboBadge').classList.remove('hidden');
-                }
-
-                scene.remove(balloon.mesh);
-                setTimeout(() => {
-                    questionIndex++;
-                    wrongAttemptsInCurrentQ = 0;
-                    if (questionIndex >= 8) endGame();
-                    else spawnBalloonsForCurrentQuestion();
-                }, 800);
-            } else {
-                playSound('miss');
-                combo = 1;
-                document.getElementById('comboBadge').classList.add('hidden');
-                wrongAttemptsInCurrentQ++;
-                scene.remove(balloon.mesh);
-
-                document.getElementById('statusMessage').innerText = "⚠️ อุ๊ย~ ลองคิดเลขแล้วเลือกใหม่นะกัปตัน!";
-                setTimeout(() => { isProcessingShot = false; }, 800);
-            }
-        }
-
-        function gameLoop() {
-            requestAnimationFrame(gameLoop);
-            if (!gameStarted) return;
-
-            balloons.forEach((b, i) => {
-                b.mesh.position.y = 0.5 + Math.sin(Date.now() * 0.003 + i) * 0.2;
-            });
-
-            renderer.render(scene, camera3D);
-        }
-
-        function endGame() {
-            gameStarted = false;
-            let stars = score >= 700 ? "⭐⭐⭐" : (score >= 400 ? "⭐⭐" : "⭐");
-            document.getElementById('starRatingText').innerText = stars;
-            document.getElementById('finalScore').innerText = `${score} คะแนน`;
-            document.getElementById('hud').classList.add('hidden');
-            document.getElementById('gameOverModal').classList.remove('hidden');
-        }
-
-        document.getElementById('startBtn').addEventListener('click', () => {
-            initAudio();
-            document.getElementById('startModal').classList.add('hidden');
-            document.getElementById('hud').classList.remove('hidden');
-
-            initThreeJS();
-            currentQuestions = generateSessionQuestions();
-            questionIndex = 0; score = 0; combo = 1; chestCount = 0;
-            gameStarted = true;
-
-            spawnBalloonsForCurrentQuestion();
-            gameLoop();
+        window.addEventListener('pointerdown', (e) => {
+            if (gameState !== 'PLAYING') return;
+            isPointerDown = true;
+            updatePlayerTarget(e.clientX);
         });
+
+        window.addEventListener('pointermove', (e) => {
+            if (gameState !== 'PLAYING' || !isPointerDown) return;
+            updatePlayerTarget(e.clientX);
+        });
+
+        window.addEventListener('pointerup', () => {
+            isPointerDown = false;
+        });
+
+        // Keyboard support (Arrow keys / A & D)
+        const keys = { ArrowLeft: false, ArrowRight: false, KeyA: false, KeyD: false };
+        window.addEventListener('keydown', (e) => {
+            if (keys.hasOwnProperty(e.code)) keys[e.code] = true;
+        });
+        window.addEventListener('keyup', (e) => {
+            if (keys.hasOwnProperty(e.code)) keys[e.code] = false;
+        });
+
+        function updatePlayerTarget(clientX) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = gameWidth / rect.width;
+            let relX = (clientX - rect.left) * scaleX;
+            player.targetX = Math.max(player.radius + 20, Math.min(gameWidth - player.radius - 20, relX));
+        }
+
+        // Generate Math Problem (Subtraction within 20, non-negative result)
+        function generateProblem() {
+            let a = Math.floor(Math.random() * 16) + 4; // 4 to 19
+            let b = Math.floor(Math.random() * (a + 1)); // 0 to a (ensures non-negative)
+            let correctAnswer = a - b;
+
+            // Generate wrong answer (differs by 1 to 3)
+            let diff = Math.random() < 0.5 ? 1 : (Math.random() < 0.7 ? 2 : 3);
+            let wrongAnswer = Math.random() < 0.5 ? correctAnswer + diff : correctAnswer - diff;
+            
+            // Ensure wrong answer is valid (>= 0 and != correctAnswer)
+            if (wrongAnswer < 0 || wrongAnswer === correctAnswer) {
+                wrongAnswer = correctAnswer + diff <= 20 ? correctAnswer + diff : correctAnswer - diff;
+            }
+            if (wrongAnswer < 0) wrongAnswer = correctAnswer + 1;
+
+            // Randomly place correct answer on Left (0) or Right (1)
+            let correctSide = Math.random() < 0.5 ? 'left' : 'right';
+            let leftVal = correctSide === 'left' ? correctAnswer : wrongAnswer;
+            let rightVal = correctSide === 'right' ? correctAnswer : wrongAnswer;
+
+            return {
+                num1: a,
+                num2: b,
+                correctAnswer: correctAnswer,
+                leftValue: leftVal,
+                rightValue: rightVal,
+                correctSide: correctSide,
+                resolved: false
+            };
+        }
+
+        // Spawn a new pair of platforms at the top
+        function spawnPlatformPair() {
+            if (currentQuestionIndex >= totalQuestions) return;
+            
+            currentProblem = generateProblem();
+            let platWidth = 140;
+            let platHeight = 65;
+            let yPos = -80; // Start above top screen
+
+            platforms = [
+                {
+                    x: gameWidth * 0.28 - platWidth / 2,
+                    y: yPos,
+                    width: platWidth,
+                    height: platHeight,
+                    value: currentProblem.leftValue,
+                    isCorrect: currentProblem.correctSide === 'left',
+                    side: 'left'
+                },
+                {
+                    x: gameWidth * 0.72 - platWidth / 2,
+                    y: yPos,
+                    width: platWidth,
+                    height: platHeight,
+                    value: currentProblem.rightValue,
+                    isCorrect: currentProblem.correctSide === 'right',
+                    side: 'right'
+                }
+            ];
+            pairActive = true;
+        }
+
+        // Reset game session
+        function startGame() {
+            score = 0;
+            lives = 3;
+            currentQuestionIndex = 0;
+            currentSpeed = baseSpeed;
+            pairActive = false;
+            feedbackTimer = 0;
+            player.x = gameWidth / 2;
+            player.targetX = gameWidth / 2;
+
+            startScreen.classList.add('hidden');
+            gameoverScreen.classList.add('hidden');
+            helpBtn.classList.remove('hidden');
+
+            gameState = 'PLAYING';
+            spawnPlatformPair();
+        }
+
+        // Game Over / Victory Trigger
+        function endGame(won) {
+            gameState = 'GAMEOVER';
+            helpBtn.classList.add('hidden');
+            gameoverScreen.classList.remove('hidden');
+
+            if (won) {
+                gameoverTitle.textContent = '🎉 ยอดเยี่ยมมาก! ชนะแล้ว!';
+                let stars = '⭐';
+                if (lives === 3) stars = '⭐⭐⭐';
+                else if (lives === 2) stars = '⭐⭐';
+                else stars = '⭐';
+                gameoverStars.textContent = stars;
+                gameoverStats.innerHTML = `คะแนนรวม: <b>${score}</b> คะแนน<br>เหลือหัวใจ: <b>${lives}</b> ดวง`;
+                sfx.playCoin();
+            } else {
+                gameoverTitle.textContent = '😢 พยายามใหม่นะ!';
+                gameoverStars.textContent = '❌';
+                gameoverStats.innerHTML = `ทำได้ถึงข้อ: <b>${currentQuestionIndex}/10</b><br>คะแนนรวม: <b>${score}</b> คะแนน`;
+                sfx.playError();
+            }
+        }
+
+        // Main Update Loop
+        function update(dt) {
+            if (gameState !== 'PLAYING') return;
+
+            // Background clouds movement
+            clouds.forEach(cloud => {
+                cloud.y += cloud.speed;
+                if (cloud.y > gameHeight + 50) {
+                    cloud.y = -50;
+                    cloud.x = Math.random() * gameWidth;
+                }
+            });
+
+            // Keyboard navigation check
+            let moveSpeed = 6;
+            if (keys.ArrowLeft || keys.KeyA) player.targetX -= moveSpeed;
+            if (keys.ArrowRight || keys.KeyD) player.targetX += moveSpeed;
+            player.targetX = Math.max(player.radius + 20, Math.min(gameWidth - player.radius - 20, player.targetX));
+
+            // Smooth horizontal movement towards target
+            player.x += (player.targetX - player.x) * 0.2;
+
+            // Automatic continuous bounce simulation
+            player.bounceTimer += 0.15;
+            let bounceOffset = Math.sin(player.bounceTimer) * 12;
+            player.y = gameHeight * 0.62 + bounceOffset;
+
+            // Squish & stretch physics effect
+            player.squishX = 1 + Math.sin(player.bounceTimer * 2) * 0.08;
+            player.squishY = 1 - Math.sin(player.bounceTimer * 2) * 0.08;
+
+            // Handle feedback timer
+            if (feedbackTimer > 0) {
+                feedbackTimer -= dt;
+            }
+
+            // Spawner check (Ensure pair of platforms is always active)
+            if (!pairActive && feedbackTimer <= 0) {
+                currentQuestionIndex++;
+                if (currentQuestionIndex > totalQuestions) {
+                    endGame(true);
+                    return;
+                }
+                spawnPlatformPair();
+            }
+
+            // Move platforms down
+            if (pairActive && platforms.length === 2) {
+                platforms.forEach(p => {
+                    p.y += currentSpeed;
+                });
+
+                // Landing check line (e.g. around player y position + radius)
+                let landingY = player.y + player.radius;
+                let landingZoneTop = landingY - 25;
+                let landingZoneBottom = landingY + 20;
+
+                // Check if platforms reach landing zone
+                if (!currentProblem.resolved && platforms[0].y + platforms[0].height >= landingZoneTop && platforms[0].y <= landingZoneBottom) {
+                    // Determine which platform the player is currently above
+                    let chosenPlatform = null;
+                    platforms.forEach(p => {
+                        if (player.x >= p.x - 15 && player.x <= p.x + p.width + 15) {
+                            chosenPlatform = p;
+                        }
+                    });
+
+                    if (chosenPlatform) {
+                        currentProblem.resolved = true;
+                        pairActive = false;
+
+                        if (chosenPlatform.isCorrect) {
+                            // Correct Answer!
+                            score += 100;
+                            sfx.playCoin();
+                            currentSpeed += 0.25; // Increase speed slightly per correct answer
+                            feedbackMessage = 'ถูกต้อง! +100 🎉';
+                            feedbackColor = '#4caf50';
+                            feedbackTimer = 1.0; // Pause 1 second before next spawn
+                        } else {
+                            // Wrong Answer
+                            lives--;
+                            sfx.playError();
+                            feedbackMessage = 'เกือบถูกแล้ว! 💡';
+                            feedbackColor = '#e53935';
+                            feedbackTimer = 1.5; // Pause to show correct glowing answer
+
+                            if (lives <= 0) {
+                                setTimeout(() => endGame(false), 1200);
+                            }
+                        }
+                    }
+                }
+
+                // If platforms pass bottom of screen without selection
+                if (platforms[0].y > gameHeight) {
+                    if (!currentProblem.resolved) {
+                        currentProblem.resolved = true;
+                        pairActive = false;
+                        lives--;
+                        sfx.playError();
+                        feedbackMessage = 'หมดเวลาเลือก! ⏰';
+                        feedbackColor = '#ff9800';
+                        feedbackTimer = 1.2;
+
+                        if (lives <= 0) {
+                            setTimeout(() => endGame(false), 1000);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Render Graphics (HTML5 Canvas 2D)
+        function draw() {
+            ctx.clearRect(0, 0, gameWidth, gameHeight);
+
+            // 1. Draw Background Sky Gradient & Sun
+            let bgGrad = ctx.createLinearGradient(0, 0, 0, gameHeight);
+            bgGrad.addColorStop(0, '#81d4fa');
+            bgGrad.addColorStop(1, '#e1f5fe');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, gameWidth, gameHeight);
+
+            // Sun
+            ctx.save();
+            ctx.fillStyle = '#ffeb3b';
+            ctx.shadowColor = '#fff59d';
+            ctx.shadowBlur = 25;
+            ctx.beginPath();
+            ctx.arc(gameWidth - 60, 60, 35, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+
+            // Clouds
+            clouds.forEach(cloud => {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+                ctx.beginPath();
+                ctx.arc(cloud.x, cloud.y, cloud.size * 0.5, 0, Math.PI * 2);
+                ctx.arc(cloud.x + cloud.size * 0.4, cloud.y - cloud.size * 0.2, cloud.size * 0.4, 0, Math.PI * 2);
+                ctx.arc(cloud.x + cloud.size * 0.8, cloud.y, cloud.size * 0.45, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // 2. Draw Header / Score / Lives / Question Banner
+            // Top HUD Background banner
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.roundRect(15, 15, gameWidth - 30, 75, 20);
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#b3e5fc';
+            ctx.stroke();
+
+            // Score & Question counter
+            ctx.fillStyle = '#01579b';
+            ctx.font = 'bold 18px "Kanit", sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText(`⭐ คะแนน: ${score}`, 30, 45);
+
+            ctx.textAlign = 'right';
+            ctx.fillText(`ข้อที่: ${Math.min(currentQuestionIndex, totalQuestions)}/${totalQuestions}`, gameWidth - 30, 45);
+
+            // Lives (Hearts)
+            let heartX = 30;
+            for (let i = 0; i < 3; i++) {
+                ctx.font = '22px sans-serif';
+                ctx.fillText(i < lives ? '❤️' : '🖤', heartX, 75);
+                heartX += 30;
+            }
+
+            // Main Problem Banner (Top Center)
+            if (currentProblem && gameState === 'PLAYING') {
+                ctx.save();
+                ctx.fillStyle = '#ff5722';
+                ctx.font = 'bold 26px "Kanit", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.shadowColor = 'rgba(0,0,0,0.15)';
+                ctx.shadowBlur = 4;
+                ctx.fillText(`${currentProblem.num1}  −  ${currentProblem.num2}  =  ?`, gameWidth / 2, 62);
+                ctx.restore();
+            }
+
+            // 3. Draw Landing Zone Line
+            let landingY = player.y + player.radius;
+            ctx.strokeStyle = 'rgba(255, 152, 0, 0.4)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([6, 6]);
+            ctx.beginPath();
+            ctx.moveTo(30, landingY + 15);
+            ctx.lineTo(gameWidth - 30, landingY + 15);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // 4. Draw Platforms (Candy-style shiny green tablets)
+            platforms.forEach(p => {
+                ctx.save();
+
+                // If wrong answer was chosen, highlight the correct one brightly
+                let isHighlighted = false;
+                if (currentProblem && currentProblem.resolved && p.isCorrect) {
+                    isHighlighted = true;
+                    ctx.shadowColor = '#00e676';
+                    ctx.shadowBlur = 25;
+                } else {
+                    ctx.shadowColor = 'rgba(0,0,0,0.2)';
+                    ctx.shadowBlur = 10;
+                    ctx.shadowOffsetY = 5;
+                }
+
+                // Platform body gradient (Candy green)
+                let platGrad = ctx.createLinearGradient(p.x, p.y, p.x, p.y + p.height);
+                if (isHighlighted) {
+                    platGrad.addColorStop(0, '#b9f6ca');
+                    platGrad.addColorStop(1, '#00e676');
+                } else {
+                    platGrad.addColorStop(0, '#a5d6a7');
+                    platGrad.addColorStop(1, '#4caf50');
+                }
+
+                ctx.fillStyle = platGrad;
+                ctx.beginPath();
+                ctx.roundRect(p.x, p.y, p.width, p.height, 20);
+                ctx.fill();
+
+                // Shiny top gloss highlight
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.beginPath();
+                ctx.roundRect(p.x + 8, p.y + 4, p.width - 16, p.height * 0.35, 10);
+                ctx.fill();
+
+                // Number on platform
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 34px "Kanit", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.shadowColor = 'rgba(0,0,0,0.3)';
+                ctx.shadowBlur = 4;
+                ctx.fillText(p.value, p.x + p.width / 2, p.y + p.height / 2 + 3);
+
+                ctx.restore();
+            });
+
+            // 5. Draw Feedback Message popup if active
+            if (feedbackTimer > 0 && feedbackMessage) {
+                ctx.save();
+                ctx.font = 'bold 28px "Kanit", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = feedbackColor;
+                ctx.shadowColor = '#ffffff';
+                ctx.shadowBlur = 8;
+                ctx.fillText(feedbackMessage, gameWidth / 2, gameHeight * 0.42);
+                ctx.restore();
+            }
+
+            // 6. Draw Player Character (Kawaii Yellow Bouncing Ball with Pink Cheeks)
+            ctx.save();
+            ctx.translate(player.x, player.y);
+            ctx.scale(player.squishX, player.squishY);
+
+            // Drop shadow under ball
+            ctx.save();
+            ctx.scale(1 / player.squishX, 1 / player.squishY);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+            ctx.beginPath();
+            ctx.ellipse(0, player.radius + 12, player.radius * 0.8, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+
+            // Ball body gradient (Kawaii pastel yellow)
+            let ballGrad = ctx.createRadialGradient(-8, -8, 5, 0, 0, player.radius);
+            ballGrad.addColorStop(0, '#fff176');
+            ballGrad.addColorStop(0.7, '#ffeb3b');
+            ballGrad.addColorStop(1, '#fbc02d');
+
+            ctx.fillStyle = ballGrad;
+            ctx.beginPath();
+            ctx.arc(0, 0, player.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#f57f17';
+            ctx.stroke();
+
+            // Cute Blush Cheeks (Pink)
+            ctx.fillStyle = '#ff8a80';
+            ctx.beginPath();
+            ctx.arc(-13, 5, 6, 0, Math.PI * 2);
+            ctx.arc(13, 5, 6, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Eyes (Cute black anime style)
+            ctx.fillStyle = '#212121';
+            ctx.beginPath();
+            ctx.arc(-8, -4, 4.5, 0, Math.PI * 2);
+            ctx.arc(8, -4, 4.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Eye sparkle highlights
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(-10, -6, 1.5, 0, Math.PI * 2);
+            ctx.arc(6, -6, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Cute smiling mouth
+            ctx.strokeStyle = '#212121';
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.arc(0, 2, 6, 0.1 * Math.PI, 0.9 * Math.PI);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // Main Game Loop Timer
+        let lastTime = performance.now();
+        function mainLoop(time) {
+            let dt = (time - lastTime) / 1000;
+            lastTime = time;
+
+            update(dt);
+            draw();
+
+            requestAnimationFrame(mainLoop);
+        }
+
+        // Event Listeners for UI buttons
+        startBtn.addEventListener('click', () => {
+            startGame();
+        });
+
+        restartBtn.addEventListener('click', () => {
+            startGame();
+        });
+
+        helpBtn.addEventListener('click', () => {
+            startScreen.classList.remove('hidden');
+            gameState = 'START';
+        });
+
+        // Initialize first frame render
+        requestAnimationFrame(mainLoop);
     </script>
 </body>
 </html>
