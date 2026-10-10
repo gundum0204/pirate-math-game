@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AR โจรสลัดน้อย ยิงธนูล่าสมบัติ — คณิตศาสตร์ ป.1</title>
+    <title>AAR โจรสลัดน้อย ยิงธนูล่าสมบัติ — คณิตศาสตร์ ป.1</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Prompt & Kanit -->
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;700&family=Prompt:wght@400;700&display=swap" rel="stylesheet">
     <!-- Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- MediaPipe Hands (ตัด Camera Utils ออก ใช้โค้ดตรงเสถียรที่สุด) -->
+    <!-- MediaPipe Hands -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
     <style>
         body {
@@ -369,36 +369,58 @@
             });
         }
 
-        async function initCameraAndAI() {
-            videoElement = document.getElementById('webcam');
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" } 
-            });
-            videoElement.srcObject = stream;
-            await videoElement.play();
+        // ขอสิทธิ์กล้องแบบซิงโครนัสตรงๆ ทันทีที่คลิกปุ่ม
+        document.getElementById('startBtn').addEventListener('click', () => {
+            initAudio();
+            document.getElementById('startModal').classList.add('hidden');
+            document.getElementById('loadingModal').classList.remove('hidden');
 
-            mediaPipeHands = new Hands({
-                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-            });
-            mediaPipeHands.setOptions({
-                selfieMode: true, maxNumHands: 2, modelComplexity: 1,
-                minDetectionConfidence: 0.6, minTrackingConfidence: 0.6
-            });
-            mediaPipeHands.onResults(onHandResults);
+            navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" } })
+                .then(stream => {
+                    videoElement = document.getElementById('webcam');
+                    videoElement.srcObject = stream;
+                    videoElement.play();
 
-            // ส่งเฟรมเข้า MediaPipe อย่างต่อเนื่องแบบเสถียร
-            async function sendVideoFrame() {
-                if (gameStarted && videoElement && videoElement.readyState >= 2) {
-                    try {
-                        await mediaPipeHands.send({ image: videoElement });
-                    } catch(e) {}
-                }
-                if (gameStarted) {
+                    initThreeJS();
+
+                    mediaPipeHands = new Hands({
+                        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+                    });
+                    mediaPipeHands.setOptions({
+                        selfieMode: true, maxNumHands: 2, modelComplexity: 1,
+                        minDetectionConfidence: 0.6, minTrackingConfidence: 0.6
+                    });
+                    mediaPipeHands.onResults(onHandResults);
+
+                    async function sendVideoFrame() {
+                        if (gameStarted && videoElement && videoElement.readyState >= 2) {
+                            try {
+                                await mediaPipeHands.send({ image: videoElement });
+                            } catch(e) {}
+                        }
+                        if (gameStarted) {
+                            requestAnimationFrame(sendVideoFrame);
+                        }
+                    }
+
+                    currentQuestions = generateSessionQuestions();
+                    questionIndex = 0; score = 0; combo = 1; chestCount = 0;
+
+                    document.getElementById('loadingModal').classList.add('hidden');
+                    document.getElementById('hud').classList.remove('hidden');
+                    gameStarted = true;
+
+                    spawnBalloonsForCurrentQuestion();
+                    gameLoop();
                     requestAnimationFrame(sendVideoFrame);
-                }
-            }
-            requestAnimationFrame(sendVideoFrame);
-        }
+                })
+                .catch(err => {
+                    console.error(err);
+                    document.getElementById('loadingModal').classList.add('hidden');
+                    alert("ไม่สามารถเข้าถึงกล้องเว็บแคมได้ กรุณาตรวจสอบสิทธิ์การใช้งานกล้องในเบราว์เซอร์");
+                    document.getElementById('startModal').classList.remove('hidden');
+                });
+        });
 
         function onHandResults(results) {
             if (!gameStarted) return;
@@ -575,32 +597,6 @@
             document.getElementById('hud').classList.add('hidden');
             document.getElementById('gameOverModal').classList.remove('hidden');
         }
-
-        document.getElementById('startBtn').addEventListener('click', async () => {
-            initAudio();
-            document.getElementById('startModal').classList.add('hidden');
-            document.getElementById('loadingModal').classList.remove('hidden');
-
-            try {
-                initThreeJS();
-                await initCameraAndAI();
-
-                currentQuestions = generateSessionQuestions();
-                questionIndex = 0; score = 0; combo = 1; chestCount = 0;
-
-                document.getElementById('loadingModal').classList.add('hidden');
-                document.getElementById('hud').classList.remove('hidden');
-                gameStarted = true;
-
-                spawnBalloonsForCurrentQuestion();
-                gameLoop();
-            } catch (err) {
-                console.error(err);
-                document.getElementById('loadingModal').classList.add('hidden');
-                alert("ไม่สามารถเข้าถึงกล้องเว็บแคมได้ กรุณาตรวจสอบสิทธิ์การใช้งานกล้องในเบราว์เซอร์");
-                document.getElementById('startModal').classList.remove('hidden');
-            }
-        });
     </script>
 </body>
 </html>
