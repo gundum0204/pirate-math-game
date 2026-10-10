@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AR โจรสลัดน้อย ยิงธนูล่าสมบัติ — ป.1</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Prompt & Kanit -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;700&family=Prompt:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- MediaPipe Hands & Camera Utils -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <style>
+        body {
+            font-family: 'Prompt', 'Kanit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            background-color: #10495F;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+        .game-font {
+            font-family: 'Kanit', sans-serif;
+        }
+    </style>
+</head>
+<body class="fixed inset-0 w-full h-[100dvh] overflow-hidden flex items-center justify-center">
+
+    <!-- Hidden Video สำหรับ MediaPipe -->
+    <video id="webcam" class="hidden" playsinline muted autoplay width="640" height="480"></video>
+
+    <!-- Canvas หลักสำหรับ Render กล้องและ 3D Scene -->
+    <canvas id="gameCanvas" class="absolute inset-0 w-full h-full object-cover z-0"></canvas>
+
+    <!-- ม่านสีโปร่งแสงทับกล้องเพื่อให้ตัวหนังสืออ่านง่าย -->
+    <div class="absolute inset-0 bg-[#10495F] opacity-40 pointer-events-none z-10"></div>
+
+    <!-- UI Overlay (HUD) -->
+    <div id="hud" class="absolute inset-0 z-25 pointer-events-none flex flex-col justify-between p-4 md:p-6 hidden">
+        <!-- แถบบน: คะแนน, คอมโบ, ความคืบหน้าข้อ -->
+        <div class="flex justify-between items-center bg-black/30 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/20 text-white shadow-lg pointer-events-auto">
+            <div class="flex items-center space-x-3">
+                <span class="text-2xl">🏴‍☠️</span>
+                <div>
+                    <div class="text-xs text-amber-300 font-semibold">คะแนนรวม</div>
+                    <div id="scoreDisplay" class="text-xl md:text-2xl font-bold game-font">0</div>
+                </div>
+            </div>
+            <div class="text-center">
+                <div class="text-xs text-amber-300 font-semibold">ภารกิจขุมทรัพย์</div>
+                <div id="progressDisplay" class="text-lg md:text-xl font-bold game-font text-amber-400">ข้อ 1 / 8</div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <div id="comboBadge" class="bg-amber-500 text-slate-900 font-bold px-3 py-1 rounded-full text-sm shadow-md animate-bounce hidden">
+                    COMBO x<span id="comboDisplay">1</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- กล่องโจทย์คณิตศาสตร์กลางจอ -->
+        <div class="self-center bg-slate-900/80 backdrop-blur-md border-2 border-amber-400/60 px-6 py-4 rounded-3xl shadow-2xl text-center max-w-lg w-full mx-4">
+            <div id="questionCategory" class="text-xs text-amber-300 font-semibold uppercase tracking-wider mb-1">โจทย์คำนวณ</div>
+            <div id="questionText" class="text-2xl md:text-4xl font-extrabold text-white game-font drop-shadow-md">3 + 4 = ?</div>
+            <div id="subTip" class="text-xs text-slate-300 mt-1">กางมือออกเพื่อชาร์จคันธนู เล็งไปที่ลูกโป่งคำตอบที่ถูกต้อง!</div>
+        </div>
+
+        <!-- แถบล่าง: สถานะมือและคำแนะนำ -->
+        <div class="flex justify-between items-end pointer-events-auto">
+            <div id="statusMessage" class="bg-black/40 backdrop-blur-sm text-amber-200 px-4 py-2 rounded-xl text-xs md:text-sm border border-white/10">
+                🔍 กำลังมองหามือ...
+            </div>
+            <div class="bg-black/40 backdrop-blur-sm text-white px-3 py-1.5 rounded-xl text-xs border border-white/10 flex items-center space-x-1">
+                <span>หีบสมบัติเปิด:</span>
+                <span id="chestCount" class="text-amber-400 font-bold">0/8 🪙</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ข้อความแจ้งเตือนกลางจอเมื่อมือหลุดเฟรม -->
+    <div id="warningOverlay" class="absolute inset-0 z-30 pointer-events-none flex items-center justify-center bg-black/50 backdrop-blur-sm hidden">
+        <div class="bg-slate-900/90 border-4 border-amber-400 p-6 rounded-3xl text-center text-white max-w-md mx-4 shadow-2xl animate-pulse">
+            <div class="text-4xl mb-2">🏹</div>
+            <div class="text-xl font-bold mb-2 game-font text-amber-300">ยกสองมือให้กล้องเห็น จับคันธนูกันเถอะ!</div>
+            <p class="text-sm text-slate-300">กรุณายืนให้กล้องเห็นมือทั้งสองข้างชัดเจนเพื่อถือคันธนูโจรสลัด</p>
+        </div>
+    </div>
+
+    <!-- Modal เริ่มเกม / วิธีเล่น -->
+    <div id="startModal" class="absolute inset-0 z-40 flex items-center justify-center bg-[#10495F]/95 backdrop-blur-md p-4">
+        <div class="bg-slate-900 border-4 border-amber-400 p-6 md:p-8 rounded-3xl max-w-xl w-full text-white shadow-2xl text-center">
+            <div class="text-5xl mb-2">🏴‍☠️🏹</div>
+            <h1 class="text-2xl md:text-3xl font-extrabold text-amber-400 game-font mb-2">AR โจรสลัดน้อย ยิงธนูล่าสมบัติ</h1>
+            <p class="text-sm text-slate-300 mb-6">เกมฝึกคิดเลข ป.1 สนุกตื่นเต้นด้วยเทคโนโลยี AR กล้องเว็บแคม</p>
+            
+            <div class="bg-slate-800/80 p-4 rounded-2xl text-left text-sm space-y-2 mb-6 border border-slate-700">
+                <div class="flex items-start space-x-2">
+                    <span class="text-amber-400 font-bold">1.</span>
+                    <span><b>ยกสองมือให้กล้องเห็น:</b> ระบบจะสร้างคันธนูเรืองแสงเชื่อมระหว่างมือของคุณ</span>
+                </div>
+                <div class="flex items-start space-x-2">
+                    <span class="text-amber-400 font-bold">2.</span>
+                    <span><b>เล็งเป้าหมาย:</b> ขยับมือซ้าย-ขวาเพื่อเล็งลูกโป่งสมบัติที่มีเลขคำตอบที่ถูกต้อง</span>
+                </div>
+                <div class="flex items-start space-x-2">
+                    <span class="text-amber-400 font-bold">3.</span>
+                    <span><b>ง้างและยิง:</b> กางมือออกค้างไว้จนวงแหวนพลังสีทองเต็ม แล้วผ่อนมือเข้าหากันเพื่อยิงลูกศร!</span>
+                </div>
+                <div class="mt-3 pt-3 border-t border-slate-700 text-xs text-amber-300 italic">
+                    💡 ทิป: เล็งคร่าวๆ ก็โดน เกมช่วยเล็งให้ ยิงผิดไม่เป็นไร ลองใหม่ได้เรื่อยๆ นะกัปตัน!
+                </div>
+            </div>
+
+            <button id="startBtn" class="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold rounded-2xl text-lg shadow-lg transform transition active:scale-95 game-font cursor-pointer">
+                🚀 เริ่มต้นการผจญภัย
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal กำลังโหลด AI / กล้อง -->
+    <div id="loadingModal" class="absolute inset-0 z-50 flex items-center justify-center bg-[#10495F]/95 backdrop-blur-md p-4 hidden">
+        <div class="bg-slate-900 border-4 border-amber-400 p-8 rounded-3xl max-w-md w-full text-white text-center shadow-2xl">
+            <div class="inline-block animate-spin text-5xl mb-4">⌛</div>
+            <h2 class="text-xl font-bold text-amber-400 game-font mb-2">กำลังเตรียมกล้องและระบบ AI</h2>
+            <p class="text-sm text-slate-300">กรุณากด "อนุญาต" (Allow) ให้เบราว์เซอร์เข้าถึงกล้องของคุณ สักครู่นะครับ...</p>
+        </div>
+    </div>
+
+    <!-- Modal จบเกม (สรุปผลและดาว) -->
+    <div id="gameOverModal" class="absolute inset-0 z-50 flex items-center justify-center bg-[#10495F]/95 backdrop-blur-md p-4 hidden">
+        <div class="bg-slate-900 border-4 border-amber-400 p-6 md:p-8 rounded-3xl max-w-lg w-full text-white text-center shadow-2xl">
+            <div class="text-6xl mb-2">🎉🏆</div>
+            <h2 class="text-2xl md:text-3xl font-extrabold text-amber-400 game-font mb-1">เปิดหีบสมบัติครบแล้ว เก่งมากกัปตัน!</h2>
+            <p id="starRatingText" class="text-3xl my-3">⭐⭐⭐</p>
+            <div class="bg-slate-800 p-4 rounded-2xl my-4 text-sm space-y-2 border border-slate-700">
+                <div class="flex justify-between">
+                    <span class="text-slate-300">คะแนนรวมทั้งหมด:</span>
+                    <span id="finalScore" class="font-bold text-amber-400 game-font">800 คะแนน</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-300">หีบสมบัติที่เปิด:</span>
+                    <span class="font-bold text-amber-400 game-font">8 / 8 ใบ</span>
+                </div>
+            </div>
+            <button onclick="location.reload()" class="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold rounded-2xl text-lg shadow-lg transform transition active:scale-95 game-font cursor-pointer">
+                🔄 เล่นใหม่อีกครั้ง
+            </button>
+        </div>
+    </div>
+
+    <!-- โค้ดระบบเกมและ AR -->
+    <script>
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playSound(type) {
+            try {
+                initAudio();
+                if (!audioCtx) return;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                const now = audioCtx.currentTime;
+
+                if (type === 'string') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.1);
+                    osc.start(now); osc.stop(now + 0.1);
+                } else if (type === 'pop') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now); osc.stop(now + 0.15);
+                } else if (type === 'hit') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(600, now);
+                    osc.frequency.exponentialRampToValueAtTime(200, now + 0.2);
+                    gain.gain.setValueAtTime(0.25, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                    osc.start(now); osc.stop(now + 0.2);
+                } else if (type === 'miss') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(250, now);
+                    osc.frequency.exponentialRampToValueAtTime(100, now + 0.25);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now); osc.stop(now + 0.25);
+                } else if (type === 'combo') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.setValueAtTime(659.25, now + 0.1);
+                    osc.frequency.setValueAtTime(783.99, now + 0.2);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now); osc.stop(now + 0.3);
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        const questionBank = [
+            [
+                { q: "3 + 4 = ?", ans: 7, decoys: [6, 8] },
+                { q: "5 + 4 = ?", ans: 9, decoys: [8, 10] },
+                { q: "6 + 2 = ?", ans: 8, decoys: [7, 9] },
+                { q: "2 + 7 = ?", ans: 9, decoys: [5, 10] },
+                { q: "1 + 9 = ?", ans: 10, decoys: [8, 9] },
+                { q: "4 + 4 = ?", ans: 8, decoys: [6, 9] },
+                { q: "8 + 1 = ?", ans: 9, decoys: [7, 10] },
+                { q: "5 + 5 = ?", ans: 10, decoys: [9, 11] }
+            ],
+            [
+                { q: "8 + 5 = ?", ans: 13, decoys: [12, 14] },
+                { q: "9 + 2 = ?", ans: 11, decoys: [10, 12] },
+                { q: "7 + 7 = ?", ans: 14, decoys: [13, 15] },
+                { q: "6 + 9 = ?", ans: 15
